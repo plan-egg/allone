@@ -1,0 +1,134 @@
+{
+  "groups": [],
+  "hints": [
+    {
+      "name": "allone.entity.com-col-name.tenant-id",
+      "values": [
+        {
+          "value": "tenant_id"
+        }
+      ]
+    },
+    {
+      "name": "allone.ext.swagger.enabled",
+      "values": [
+        {
+          "value": "true"
+        },
+        {
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "name": "allone.api.basePackages",
+      "values": [
+        {
+          "value": "io.github.planegg.allone"
+        }
+      ]
+    }
+  ],
+  "properties": [
+    {
+      "name": "allone.entity.com-col-name.id",
+      "type": "java.lang.String",
+      "defaultValue": "id",
+      "description": "id"
+    },
+    {
+      "name": "allone.entity.com-col-name.create-user",
+      "type": "java.lang.String",
+      "defaultValue": "create_user",
+      "description": "创建用户(allone项目数据库表通用字段配置)"
+    },
+    {
+      "name": "allone.entity.com-col-name.create-time",
+      "type": "java.lang.String",
+      "defaultValue": "create_time",
+      "description": "创建时间(allone项目数据库表通用字段配置)"
+    },
+    {
+      "name": "allone.entity.com-col-name.update-user",
+      "type": "java.lang.String",
+      "defaultValue": "update_user",
+      "description": "更新用户(allone项目数据库表通用字段配置)"
+    },
+    {
+      "name": "allone.entity.com-col-name.update-time",
+      "type": "java.lang.String",
+      "defaultValue": "update_time",
+      "description": "更新时间(allone项目数据库表通用字段配置)"
+    },
+    {
+      "name": "allone.entity.com-col-name.tenant-id",
+      "type": "java.lang.String",
+      "description": "租户ID(allone项目数据库表通用字段配置，不填则表示没有该字段)"
+    },
+    {
+      "name": "allone.aop.pointcut.usr-ctx",
+      "type": "java.lang.String",
+      "description": "接口类pointcut表达式，用于用户信息保存到上下文"
+    },
+    {
+      "name": "allone.aop.pointcut.api-log",
+      "type": "java.lang.String",
+      "description": "api日志pointcut表达式（不配置不生效）"
+    },
+    {
+      "name": "allone.aop.pointcut.service-log",
+      "type": "java.lang.String",
+      "description": "service日志pointcut表达式（不配置不生效）"
+    },
+    {
+      "name": "allone.api.basePackages",
+      "type": "java.lang.String",
+      "description": "接口类basePackages，用于限制接口返回结果封装扫描路径"
+    },
+    {
+      "name": "allone.ext.swagger.enabled",
+      "type": "java.lang.String",
+      "description": "swagger是否启用（不配置不生效）"
+    },
+    {
+      "name": "allone.ext.swagger.baskPkg",
+      "type": "java.lang.String",
+      "description": "swagger要扫描接口类包名"
+    },
+    {
+      "name": "allone.ext.swagger.title",
+      "type": "java.lang.String",
+      "description": "文档标题"
+    },
+    {
+      "name": "allone.ext.swagger.desc",
+      "type": "java.lang.String",
+      "description": "文档描述"
+    },
+    {
+      "name": "allone.ext.swagger.version",
+      "type": "java.lang.String",
+      "description": "文档版本"
+    },
+    {
+      "name": "allone.ext.swagger.teamUrl",
+      "type": "java.lang.String",
+      "description": "关联链接"
+    },
+    {
+      "name": "allone.ext.swagger.contactName",
+      "type": "java.lang.String",
+      "description": "联系人"
+    },
+    {
+      "name": "allone.ext.swagger.license",
+      "type": "java.lang.String",
+      "description": "许可名称"
+    },
+    {
+      "name": "allone.ext.swagger.licenseUrl",
+      "type": "java.lang.String",
+      "description": "许可链接"
+    }
+  ]
+}
