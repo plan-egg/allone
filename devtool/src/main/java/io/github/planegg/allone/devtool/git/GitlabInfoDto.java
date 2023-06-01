@@ -3,9 +3,9 @@ package io.github.planegg.allone.devtool.git;
 import java.util.List;
 
 /**
- * gitlab项目信息ymal配置文件装载类
+ *
  */
-public class GitlabConfigDto {
+public class GitlabInfoDto {
     /**
      * gitlab 服务地址
      */

@@ -20,10 +20,19 @@ import java.util.*;
  * @param <T>
  */
 public abstract class GitlabService <T extends IProjectInfoService> {
+    /**
+     * 存放项目名与gitlabApi的关系
+     * 用于根据项目名获取gitlabApi调用gitlab接口
+     */
+    private Map<String,GitLabApi> gitLabApiMap = new HashMap<>();
 
-    private GitLabApi gitLabApi ;
+
 
     protected final static String unknowChgReq = "未归类";
+    /**
+     * 用于适配单一gitlab来源的情况
+     */
+    protected final static String DEFAULT_GITLAB_API_KEY = "default";
 
     protected abstract GitlabService getGitlabService();
 
@@ -33,34 +42,20 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @throws GitLabApiException
      */
     public void start(String gitlabUrl ,String token,Class<T> prjInfoClz) throws GitLabApiException {
-        List<String> chgReqList = getGitlabService().getChgReqList();
-        T[] prjInfoArr = prjInfoClz.getEnumConstants();
-        List<T> prjInfoList = Arrays.asList(prjInfoArr);
-        start(gitlabUrl , token,chgReqList,prjInfoList);
+        Map<String,GitLabApi> gitLabApiMap = new HashMap<>();
+        gitLabApiMap.put(DEFAULT_GITLAB_API_KEY,new GitLabApi(gitlabUrl,token));
+        start(gitLabApiMap , prjInfoClz);
     }
     /**
      * 开始检查
-     * @param configFile
+     * @param prjInfoClz
      * @throws GitLabApiException
      */
-    public void start(String gitlabUrl ,String token,String configFile) throws GitLabApiException, IOException {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        //读取example.yaml文件
-        String configFilePath = GitlabService.class.getClassLoader().getResource(configFile).getPath();
-        File file = new File(configFilePath);
-        System.out.println("正在读取配置文件："+file.getAbsolutePath());
-        //将yaml文件的内容转换为Java对象
-        GitlabConfigDto gitlabConfigDto = mapper.readValue(file, GitlabConfigDto.class);
-
-        if (gitlabUrl != null){
-            gitlabConfigDto.setGitlabUrl(gitlabUrl);
-        }
-        if (token != null){
-            gitlabConfigDto.setGitlabToken(token);
-        }
-
+    public void start(Map<String,GitLabApi> gitLabApiMap,Class<T> prjInfoClz) throws GitLabApiException {
         List<String> chgReqList = getGitlabService().getChgReqList();
-        start(gitlabUrl , token,chgReqList,(List<T>) gitlabConfigDto.getPrjInfoList());
+        T[] prjInfoArr = prjInfoClz.getEnumConstants();
+        List<T> prjInfoList = Arrays.asList(prjInfoArr);
+        start(gitLabApiMap , chgReqList,prjInfoList);
     }
     /**
      * 开始检查
@@ -68,7 +63,32 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @throws GitLabApiException
      */
     public void start(String configFile) throws GitLabApiException, IOException {
-        start(null,null,configFile);
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        //读取example.yaml文件
+        String configFilePath = GitlabService.class.getClassLoader().getResource(configFile).getPath();
+        File file = new File(configFilePath);
+        System.out.println("正在读取配置文件："+file.getAbsolutePath());
+        //将yaml文件的内容转换为Java对象
+        GitlabConfig gitlabConfig = mapper.readValue(file, GitlabConfig.class);
+        List<T> prjInfoList = new ArrayList<>();
+        Map<String,GitLabApi> gitLabApiMap = new HashMap<>();
+
+        for (GitlabInfoDto gitlabInfoDto : gitlabConfig.getGitlabInfoList()) {
+            if (gitlabInfoDto.getGitlabUrl() == null){
+                throw new RuntimeException("gitlabUrl 不能为空！");
+            }
+            if ( gitlabInfoDto.getGitlabToken() == null){
+                throw new RuntimeException("gitlabToken 不能为空！");
+            }
+            GitLabApi gitLabApi = new GitLabApi(gitlabInfoDto.getGitlabUrl(),gitlabInfoDto.getGitlabToken());
+            for (GitlabPrjInfoDto gitlabPrjInfoDto : gitlabInfoDto.getPrjInfoList()) {
+                gitLabApiMap.put(gitlabPrjInfoDto.getName(),gitLabApi);
+            }
+            prjInfoList.addAll((List<T>)gitlabInfoDto.getPrjInfoList());
+        }
+
+        List<String> chgReqList = getGitlabService().getChgReqList();
+        start(gitLabApiMap,chgReqList,prjInfoList);
     }
 
     /**
@@ -76,15 +96,8 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @param chgReqList
      * @throws GitLabApiException
      */
-    public void start(String gitlabUrl ,String token,List<String> chgReqList, List<T> prjInfoList) throws GitLabApiException {
-        if (gitlabUrl == null){
-            throw new RuntimeException("gitlabUrl 不能为空！");
-        }
-        if ( token == null){
-            throw new RuntimeException("gitlabToken 不能为空！");
-        }
-        this.gitLabApi = new GitLabApi(gitlabUrl,token);
-
+    public void start(Map<String,GitLabApi> gitLabApiMap,List<String> chgReqList, List<T> prjInfoList) throws GitLabApiException {
+        this.gitLabApiMap.putAll(gitLabApiMap);
         if (chgReqList == null || chgReqList.size() == 0){
             throw new RuntimeException("chgReqList 不能为空！");
         }
@@ -103,7 +116,8 @@ public abstract class GitlabService <T extends IProjectInfoService> {
             System.out.println("开始从来源分支获取变更需求："+chgReq);
             //根据指定获取
             for (T prjInfo : prjInfoList) {
-                Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().searchCommits(prjInfo, chgReq, prjInfo.getUatBranch());
+                GitLabApi gitLabApi = getGitlabService().getGitlabApi(prjInfo.getName());
+                Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().searchCommits(gitLabApi,prjInfo, chgReq, prjInfo.getUatBranch());
                 if (chgReqAndCommit4CompareMap.size() == 0){
                     continue;
                 }
@@ -116,11 +130,12 @@ public abstract class GitlabService <T extends IProjectInfoService> {
 
         for (T prjInfo : prjInfoList) {
             System.out.println("开始从目标分支获取变更需求，当前项目："+prjInfo.getName());
-            Long mergeRequestId = getMergeRequest(prjInfo);
+            GitLabApi gitLabApi = getGitlabService().getGitlabApi(prjInfo.getName());
+            Long mergeRequestId = getMergeRequest(gitLabApi,prjInfo);
             if (mergeRequestId == null){
                 continue;
             }
-            Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().getMergeCommits( prjInfo, mergeRequestId);
+            Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().getMergeCommits( gitLabApi, prjInfo, mergeRequestId);
             if (chgReqAndCommit4CompareMap.size() == 0){
                 continue;
             }
@@ -154,7 +169,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @return
      * @throws GitLabApiException
      */
-    protected Map<String,Set<String>> getMergeCommits(T prjInfo, Long mrId) throws GitLabApiException {
+    protected Map<String,Set<String>> getMergeCommits(GitLabApi gitLabApi,T prjInfo, Long mrId) throws GitLabApiException {
         String prjId = String.valueOf(prjInfo.getPrjId());
         List<Commit> commits = gitLabApi.getMergeRequestApi().getCommits(prjId, mrId);
         Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().filterCommit(prjInfo,commits);
@@ -169,7 +184,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @return
      * @throws GitLabApiException
      */
-    protected Map<String,Set<String>> searchCommits(T prjInfo , String searchKey , String branch) throws GitLabApiException {
+    protected Map<String,Set<String>> searchCommits(GitLabApi gitLabApi, T prjInfo , String searchKey , String branch) throws GitLabApiException {
         String prjId = String.valueOf(prjInfo.getPrjId());
         List<Commit> commitList = (List<Commit>) gitLabApi.getSearchApi()
                 .projectSearch(prjId, Constants.ProjectSearchScope.COMMITS, searchKey, branch);
@@ -183,18 +198,19 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @return
      * @throws GitLabApiException
      */
-    protected Long getMergeRequest(T prjInfo) throws GitLabApiException {
+    protected Long getMergeRequest(GitLabApi gitLabApi, T prjInfo) throws GitLabApiException {
         List<Long> mgReqIdList = new ArrayList<>();
         String prjId = String.valueOf(prjInfo.getPrjId());
         List<MergeRequest> mergeRequestList = gitLabApi.getMergeRequestApi().getMergeRequests(prjId, Constants.MergeRequestState.OPENED);
         //获取合并到主干的合并请求
         for (MergeRequest mergeRequest : mergeRequestList) {
             String targetBranch = mergeRequest.getTargetBranch();
-            if (prjInfo.getMainBranch().equals(targetBranch)){
-                Long mgReqId = mergeRequest.getId();
-                mgReqIdList.add(mgReqId);
-                break;
+            if (!prjInfo.getMainBranch().equals(targetBranch)){
+                continue;
             }
+            Long mgReqId = mergeRequest.getIid();
+            mgReqIdList.add(mgReqId);
+            System.out.println(String.format("项目【%s】获取到的合并请求标题：%s",prjInfo.getName(),mergeRequest.getTitle()));
         }
         if (mgReqIdList.size() == 0){
             return null;
@@ -202,7 +218,8 @@ public abstract class GitlabService <T extends IProjectInfoService> {
         if (mgReqIdList.size() > 1){
             throw new RuntimeException(String.format("项目【%s】合并到主干的待合并请求数不是有且只有1个！当前请求数：%S",prjInfo.getName(),mergeRequestList.size()));
         }
-        return mgReqIdList.get(0);
+        Long mgReqId = mgReqIdList.get(0);
+        return mgReqId;
     }
 
     /**
@@ -316,5 +333,22 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @return
      */
     public abstract List<String> getChgReqList();
+
+    /**
+     * 获取gitlabApi
+     * @param prjName
+     * @return
+     */
+    private GitLabApi getGitlabApi(String prjName){
+        GitLabApi gitLabApi = gitLabApiMap.get(prjName);
+        if (gitLabApi != null){
+            return gitLabApi;
+        }
+        gitLabApi = gitLabApiMap.get(DEFAULT_GITLAB_API_KEY);
+        if (gitLabApi == null){
+            throw new RuntimeException("请配置好gitLabApi");
+        }
+        return gitLabApi;
+    }
 
 }

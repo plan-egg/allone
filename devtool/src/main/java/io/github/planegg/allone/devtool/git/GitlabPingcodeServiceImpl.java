@@ -20,7 +20,7 @@ public class GitlabPingcodeServiceImpl extends GitlabService {
     protected String getChgReqCode(String title){
         if (title.indexOf(" ") <= 0){
             System.err.println(title);
-            return null;
+            return title;
         }
         String chgNum = title.substring(0,title.indexOf(" "));
         chgNum = chgNum.replace("#","");

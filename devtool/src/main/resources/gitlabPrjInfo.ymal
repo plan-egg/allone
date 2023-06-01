@@ -1,14 +1,25 @@
-# 配置gitlab 项目信息
-gitlabUrl: "http://www.example.com"
-gitlabToken: "test_token"
+gitlabInfoList:
+  # 配置gitlab 项目信息
+  - gitlabUrl: "http://www.example.com"
+    gitlabToken: "test_token"
 
-# 配置gitlab 项目信息
-prjInfoList:
-  - name: testSys_1
-    prjId: 1
-    # uatBranch 默认 uat
-    #uatBranch:
-    # mainBranch 默认 master
-    #mainBranch:
-  - name: testSys_2
-    prjId: 2
+    # 配置gitlab 项目信息
+    prjInfoList:
+      # name 必须保证全局唯一，项目会根据该标识获取gitlabApi
+      - name: testSys_1
+        prjId: 1
+        # uatBranch 默认 uat
+        #uatBranch:
+        # mainBranch 默认 master
+        #mainBranch:
+      - name: testSys_2
+        prjId: 2
+  - gitlabUrl: "http://www.example.com"
+    gitlabToken: "test_token"
+
+    # 配置gitlab 项目信息
+    prjInfoList:
+      - name: testSys_1
+        prjId: 1
+      - name: testSys_2
+        prjId: 2
