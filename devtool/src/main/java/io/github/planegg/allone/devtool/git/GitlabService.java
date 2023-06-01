@@ -128,6 +128,8 @@ public abstract class GitlabService <T extends IProjectInfoService> {
             }
         }
 
+        System.out.println("来源分支缺失的需求：" + JSONObject.toJSONString(missChgReqList));
+
         for (T prjInfo : prjInfoList) {
             System.out.println("开始从目标分支获取变更需求，当前项目："+prjInfo.getName());
             GitLabApi gitLabApi = getGitlabService().getGitlabApi(prjInfo.getName());
@@ -142,6 +144,9 @@ public abstract class GitlabService <T extends IProjectInfoService> {
             for (String compareDiffKey : chgReqAndCommit4CompareMap.keySet()) {
                 String chgReqNum = compareDiffKey.split("@")[0];
                 missChgReqList.remove(chgReqNum);
+                if (!chgReqList.contains(chgReqNum)){
+                    System.err.println("注意：该提交可能不在此次版本内，确认！提交：" + chgReqNum);
+                }
             }
             tgtChgReqAndCommit4CompareMap.putAll(chgReqAndCommit4CompareMap);
         }
