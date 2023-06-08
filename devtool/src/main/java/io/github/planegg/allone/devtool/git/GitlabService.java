@@ -135,6 +135,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
             GitLabApi gitLabApi = getGitlabService().getGitlabApi(prjInfo.getName());
             Long mergeRequestId = getMergeRequest(gitLabApi,prjInfo);
             if (mergeRequestId == null){
+                System.err.println("项目没有找到符合条件的合并请求！"+prjInfo.getName());
                 continue;
             }
             Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().getMergeCommits( gitLabApi, prjInfo, mergeRequestId);

@@ -19,7 +19,7 @@ public class GitlabPingcodeServiceImpl extends GitlabService {
     @Override
     protected String getChgReqCode(String title){
         if (title.indexOf(" ") <= 0){
-            System.err.println(title);
+            System.err.println("提交没有按照规范注释："+title);
             return title;
         }
         String chgNum = title.substring(0,title.indexOf(" "));
