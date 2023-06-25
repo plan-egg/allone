@@ -3,9 +3,8 @@ package io.github.planegg.allone.starter.service.result;
 /**
  * 请求结果声明
  * @param <T>
- * @param <E>
  */
-public interface ReqResultDti <T,E extends Enum & IResultMsgKeyDti>{
+public interface ReqResultDti <T>{
     /**
      * 获取请求成功标识
      * @return

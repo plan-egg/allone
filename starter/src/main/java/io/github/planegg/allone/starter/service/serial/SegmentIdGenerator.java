@@ -16,6 +16,6 @@ public class SegmentIdGenerator implements IdentifierGenerator {
 
     @Override
     public Number nextId(Object entity) {
-        return  serialGenerateService.getId();
+        return  serialGenerateService.getId(entity);
     }
 }

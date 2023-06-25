@@ -3,9 +3,8 @@ package io.github.planegg.allone.starter.service.result;
 /**
  *
  * @param <T>
- * @param <E>
  */
-class ReqResultVo <T,E extends Enum & IResultMsgKeyDti> implements ReqResultDti {
+class ReqResultVo <T> implements ReqResultDti {
 
 
     /**

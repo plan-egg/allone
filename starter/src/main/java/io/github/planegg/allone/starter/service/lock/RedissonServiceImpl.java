@@ -1,6 +1,5 @@
 package io.github.planegg.allone.starter.service.lock;
 
-import io.github.planegg.allone.starter.common.util.PrjStringUtil;
 import io.github.planegg.allone.starter.exception.DistributedLockException;
 import io.github.planegg.allone.starter.exception.ItHandleException;
 import org.redisson.api.RLock;
@@ -14,6 +13,7 @@ import java.util.function.Function;
 /**
  * redisson实现的分布式锁服务
  */
+
 public class RedissonServiceImpl implements IDistributedLockService {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
@@ -29,16 +29,18 @@ public class RedissonServiceImpl implements IDistributedLockService {
 
     private final static String KEY_SEPARATOR = ":";
 
-    public <T extends Enum & IDistributedLockKeyDti> String getKeyStr(T keyE, String keyParm){
+    public <T extends Enum & IDistributedLockKeyDti> String getKeyStr(T keyE, String... keyExt){
         String keyStr =  keyE.getKeyGroup() + KEY_SEPARATOR + keyE.name();
-        if (!PrjStringUtil.isEmpty(keyParm)){
-            keyStr = keyStr + KEY_SEPARATOR + keyParm;
+        if (keyExt != null && keyExt.length > 0){
+            keyStr = keyStr.replaceAll("\\_\\$",KEY_SEPARATOR + "%s");
+            keyStr = String.format(keyStr , keyExt);
         }
         return keyStr;
     }
 
     @Override
-    public <T extends Enum & IDistributedLockKeyDti> boolean excuteWithTryLock(T keyE, String keyExt , Function<Object, Void> bizService , Object bizServiceParm){
+    public <T extends Enum & IDistributedLockKeyDti> boolean excuteWithTryLock(Function<Object, Void> bizService
+            , Object bizServiceParm,T keyE, String... keyExt ){
         String keyStr = getKeyStr(keyE,keyExt);
         RLock lock = redissonClient.getLock(keyStr);
         boolean isLockOk = lock.tryLock();
@@ -57,13 +59,14 @@ public class RedissonServiceImpl implements IDistributedLockService {
     }
 
     @Override
-    public <T extends Enum & IDistributedLockKeyDti> boolean excuteWithTryLock(T keyE, Function<Object, Void>  bizService , Object bizServiceParm){
-        return excuteWithTryLock(keyE, null ,bizService,bizServiceParm);
+    public <T extends Enum & IDistributedLockKeyDti> boolean excuteWithTryLock(Function<Object, Void>  bizService
+            , Object bizServiceParm,T keyE){
+        return excuteWithTryLock(bizService,bizServiceParm,keyE, null);
     }
 
     @Override
-    public <T extends Enum & IDistributedLockKeyDti,F1,F2> F2 getWithTryLock(T keyE, String keyExt
-            , Function<F1, F2>  bizService , F1 bizServiceParm, Class<F1> f1, Class<F2> f2)  throws DistributedLockException {
+    public <T extends Enum & IDistributedLockKeyDti,F1,F2> F2 getWithTryLock(Function<F1, F2>  bizService, F1 bizServiceParm
+            ,Class<F1> f1, Class<F2> f2,T keyE, String... keyExt)  throws DistributedLockException {
         F2 rs = null;
 
         String keyStr = getKeyStr(keyE,keyExt);
@@ -94,8 +97,9 @@ public class RedissonServiceImpl implements IDistributedLockService {
     }
 
     @Override
-    public <T extends Enum & IDistributedLockKeyDti,F1,F2> F2 getWithTryLock(T keyE, Function<F1, F2>  bizService , F1 bizServiceParm, Class<F1> f1, Class<F2> f2){
-        return getWithTryLock(keyE, null ,bizService,bizServiceParm,f1,f2);
+    public <T extends Enum & IDistributedLockKeyDti,F1,F2> F2 getWithTryLock(Function<F1, F2>  bizService , F1 bizServiceParm
+            , Class<F1> f1, Class<F2> f2,T keyE){
+        return getWithTryLock(bizService,bizServiceParm,f1,f2,keyE, null );
     }
 
     @Override

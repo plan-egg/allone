@@ -5,19 +5,24 @@ import io.github.planegg.allone.starter.config.ReqResultValueConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ *
+ */
 @Service
-public class ReqResultFactoryImpl implements IReqResultFactory{
+public class ReqResultFactoryImpl implements IReqResultFactory {
 
     @Autowired
     private ReqResultValueConfig reqResultValueConfig;
 
     @Override
     public ReqResultDti createSuccessMsg(Object data , Enum info, Object... parms) {
-        ReqResultVo<Object,ResultMsgKeyAlloneE> reqResultVo = createReqResultVo(info,parms);
+        ReqResultVo reqResultVo = createReqResultVo(info,parms);
         reqResultVo.setRsFlag(reqResultValueConfig.getRsFlagS());
         reqResultVo.setData(data);
         return reqResultVo;
     }
+
+
 
     @Override
     public ReqResultDti createSuccessMsg(Object data) {

@@ -37,7 +37,7 @@ public class SwaggerConfig {
 
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(Docket.class)
     public Docket docket(){
         return new Docket(DocumentationType.OAS_30)
                 .apiInfo(apiInfo())

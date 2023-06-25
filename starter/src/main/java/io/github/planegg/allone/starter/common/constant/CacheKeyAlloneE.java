@@ -12,12 +12,12 @@ public enum CacheKeyAlloneE implements ICacheKeyDti {
      * id生成批次起始值
      * 用于生成id时的起始值
      */
-    serial_batch_str_num(String.class,7,TimeUnit.DAYS)
+    serial_batch_str_num_$(String.class,7,TimeUnit.DAYS)
     /**
      * id生成批次结束值
      * 用于生成id时，当要生成的id大于此值时，就需要从数据库获重新获取下一批次
      */
-    , serial_batch_end_num(String.class,7,TimeUnit.DAYS)
+    , serial_batch_end_num_$(String.class,7,TimeUnit.DAYS)
     /**
      * id生成增长值
      * 用于生成id时的增加值，serial = serial_batch_str_num + serial_batch_count_num
@@ -32,7 +32,7 @@ public enum CacheKeyAlloneE implements ICacheKeyDti {
     /**
      * 缓存值类型
      */
-    private Class valClzType;
+    private Class valClzType ;
     /**
      * 缓存过期时间值
      */

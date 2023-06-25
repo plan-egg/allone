@@ -3,7 +3,7 @@ package io.github.planegg.allone.starter.service.result;
 /**
  *
  */
-public interface IReqResultFactory {
+public interface IReqResultFactory <E extends Enum & IResultMsgKeyDti> {
     /**
      *
      * @param data
@@ -11,7 +11,7 @@ public interface IReqResultFactory {
      * @param parms
      * @return
      */
-    ReqResultDti createSuccessMsg(Object data, Enum info, Object... parms);
+    ReqResultDti createSuccessMsg(Object data, E info, Object... parms);
 
     /**
      *
@@ -26,7 +26,7 @@ public interface IReqResultFactory {
      * @param parms
      * @return
      */
-    ReqResultDti createFailMsg(Enum info, Object... parms);
+    ReqResultDti createFailMsg(E info, Object... parms);
 
     /**
      *

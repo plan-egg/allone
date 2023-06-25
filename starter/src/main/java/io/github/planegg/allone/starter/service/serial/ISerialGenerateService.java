@@ -8,7 +8,7 @@ public interface ISerialGenerateService {
      * 获取id
      * @return
      */
-    long getId();
+    long getId(Object entity);
 
     /**
      * 获取序列

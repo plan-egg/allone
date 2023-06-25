@@ -34,10 +34,11 @@ public class RedisServiceImpl implements ICacheService {
     private final static String KEY_SEPARATOR = ":";
 
     @Override
-    public <T extends Enum & ICacheKeyDti> String getKeyStr(T keyE, String keyExt){
+    public <T extends Enum & ICacheKeyDti> String getKeyStr(T keyE, String... keyExt){
         String keyStr =  keyE.getKeyGroup() + KEY_SEPARATOR + keyE.name();
-        if (!PrjStringUtil.isEmpty(keyExt)){
-            keyStr = keyStr + KEY_SEPARATOR + keyExt;
+        if (keyExt != null && keyExt.length > 0){
+            keyStr = keyStr.replaceAll("\\_\\$",KEY_SEPARATOR + "%s");
+            keyStr = String.format(keyStr , keyExt);
         }
         return keyStr;
     }
@@ -49,11 +50,11 @@ public class RedisServiceImpl implements ICacheService {
 
     @Override
     public <T extends Enum & ICacheKeyDti,E> E get(T keyE, Class<E> valClzType) {
-        return get(keyE,null,valClzType);
+        return get(valClzType , keyE,null);
     }
 
     @Override
-    public <T extends Enum & ICacheKeyDti, E> E get(T keyE, String keyExt, Class<E> valClzType) {
+    public <T extends Enum & ICacheKeyDti, E> E get(Class<E> valClzType , T keyE, String... keyExt) {
         String keyStr = getKeyStr(keyE,keyExt);
         E valObj = valClzType.cast(redisTemplate.opsForValue().get(keyStr)) ;
         return valObj;
@@ -65,13 +66,13 @@ public class RedisServiceImpl implements ICacheService {
     }
 
     @Override
-    public <T extends Enum & ICacheKeyDti> String getString(T keyE, String keyExt) {
-        return get(keyE,keyExt,String.class);
+    public <T extends Enum & ICacheKeyDti> String getString(T keyE, String... keyExt) {
+        return get(String.class , keyE,keyExt);
     }
 
 
     @Override
-    public <T extends Enum & ICacheKeyDti,E> void set(T keyE, String keyExt, E val) {
+    public <T extends Enum & ICacheKeyDti,E> void set(E val ,T keyE, String... keyExt) {
         String keyStr = getKeyStr(keyE,keyExt);
         Class valClzType = keyE.getValClzType();
         if (valClzType != null && valClzType.isAssignableFrom(Long.class)){
@@ -95,14 +96,14 @@ public class RedisServiceImpl implements ICacheService {
     }
 
     @Override
-    public <T extends Enum & ICacheKeyDti> Boolean deleteKey(T keyE, String keyExt) {
+    public <T extends Enum & ICacheKeyDti> Boolean deleteKey(T keyE, String... keyExt) {
         String keyStr = getKeyStr(keyE,keyExt);
         return redisTemplate.delete(keyStr);
     }
 
     @Override
-    public <T extends Enum & ICacheKeyDti,E> void set(T keyE, E val) {
-        set( keyE,null,val);
+    public <T extends Enum & ICacheKeyDti,E> void set(E val ,T keyE ) {
+        set( val , keyE,null);
     }
 
     @Override
@@ -110,7 +111,7 @@ public class RedisServiceImpl implements ICacheService {
         return increment(keyE,null);
     }
     @Override
-    public <T extends Enum & ICacheKeyDti>  Long increment(T keyE, String keyExt){
+    public <T extends Enum & ICacheKeyDti>  Long increment(T keyE, String... keyExt){
         String keyStr = getKeyStr(keyE,keyExt);
         int expTime = keyE.getExpTime();
         TimeUnit expTimeUnit = keyE.getExpTimeUnit();
@@ -123,9 +124,9 @@ public class RedisServiceImpl implements ICacheService {
     }
 
     @Override
-    public <T extends Enum & ICacheKeyDti,E> E getFromDbUsingCache(T keyE, String keyExt, Class<E> valClzType
-            , Function<String, E> bizService ){
-        E rsInCache = get(keyE,keyExt,valClzType);
+    public <T extends Enum & ICacheKeyDti,E> E getFromDbUsingCache( Class<E> valClzType  , Function<String, E> bizService
+            ,T keyE, String... keyExt){
+        E rsInCache = get(valClzType,keyE,keyExt);
         if (rsInCache != null ){
             return rsInCache;
         }
@@ -134,16 +135,16 @@ public class RedisServiceImpl implements ICacheService {
         if (rsInDb == null){
             throw new ItHandleException("从数据库里没有查找到目标数据，keyStr={}",keyStr);
         }
-        rsInCache = get(keyE,keyExt,valClzType);
+        rsInCache = get(valClzType,keyE,keyExt);
         if (rsInCache != null ){
             return rsInCache;
         }
-        set(keyE,keyExt,rsInDb);
+        set(rsInDb , keyE,keyExt);
         return rsInDb;
     }
     @Override
-    public <T extends Enum & ICacheKeyDti,E> boolean refreshDbAndCache(T keyE, String keyExt, E newVal
-            , BiFunction<String, E , Boolean> bizService ){
+    public <T extends Enum & ICacheKeyDti,E> boolean refreshDbAndCache(E newVal, BiFunction<String, E , Boolean> bizService
+            ,T keyE, String... keyExt){
 
         String keyStr = getKeyStr(keyE,keyExt);
         Boolean updateOk = bizService.apply(keyStr,newVal);
@@ -161,6 +162,7 @@ public class RedisServiceImpl implements ICacheService {
         }
 
     }
+
 
 
 }

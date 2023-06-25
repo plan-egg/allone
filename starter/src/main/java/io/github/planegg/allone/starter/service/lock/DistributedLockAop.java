@@ -1,4 +1,4 @@
-package io.github.planegg.allone.starter.service.user;
+package io.github.planegg.allone.starter.service.lock;
 
 import io.github.planegg.allone.starter.common.constant.SysInitOrderC;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -16,32 +16,33 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 
 /**
- * 用户上下文切面
+ * 接口日志切面
  */
 @Configuration
-@ConditionalOnProperty(name = "allone.aop.pointcut.usr-ctx")
-@ConditionalOnBean(name = "currentUserContextService")
+@ConditionalOnProperty(name = "allone.aop.pointcut.service")
+@ConditionalOnBean(name = "dLockService")
 @Order(SysInitOrderC.ORDER_NUM_AOP)
-public class CurrentUserCtxAop {
+public class DistributedLockAop {
 
-    private final static Logger logger = LoggerFactory.getLogger(CurrentUserCtxAop.class);
+    private final static Logger logger = LoggerFactory.getLogger(DistributedLockAop.class);
 
-    @Value("${allone.aop.pointcut.usr-ctx}")
-    private String usrCtxPointcut;
+    @Value("${allone.aop.pointcut.service}")
+    private String servicePointcut;
 
     @Autowired
-    @Qualifier("currentUserContextService")
-    private MethodInterceptor currentUserContextService;
+    @Qualifier("dLockService")
+    private MethodInterceptor dLockService;
 
     @Bean
-    public DefaultPointcutAdvisor getUsrCtxPointcutAdvisor() {
+    public DefaultPointcutAdvisor getDistributedLockAopAdvisor() {
         AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
-        pointcut.setExpression(usrCtxPointcut);
+        String lockPointcut = servicePointcut + " && @annotation(io.github.planegg.allone.starter.service.lock.DLock)";
+        pointcut.setExpression(lockPointcut);
         // 配置增强类advisor
         DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor();
         advisor.setPointcut(pointcut);
-        advisor.setAdvice(currentUserContextService);
-        logger.info("AOP[CurrentUserCtxAop] init done! pointcut={} , service={}",usrCtxPointcut,currentUserContextService.getClass().getName());
+        advisor.setAdvice(dLockService);
+        logger.info("AOP[DLock] init done!pointcut={} , service={}",servicePointcut,dLockService.getClass().getName());
         return advisor;
     }
 

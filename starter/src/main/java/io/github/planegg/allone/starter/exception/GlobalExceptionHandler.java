@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ReqResultDti<?, ResultMsgKeyAlloneE> handelMissingServletRequestParameterException(MissingServletRequestParameterException e, Model model) {
+    public ReqResultDti<?> handelMissingServletRequestParameterException(MissingServletRequestParameterException e, Model model) {
         logger.error(ResultMsgKeyAlloneE.MISS_ARG.getMsg(), e);
         return reqResultFactory.createFailMsg( ResultMsgKeyAlloneE.MISS_ARG,e.getMessage());
     }
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException.class)
-    public ReqResultDti<?, ResultMsgKeyAlloneE> defaultErrorHandler(ConstraintViolationException e) {
+    public ReqResultDti<?> defaultErrorHandler(ConstraintViolationException e) {
         Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
         ConstraintViolation<?> violation = violations.iterator().next();
         String message = violation.getMessage();
@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BindException.class)
-    public ReqResultDti<?, ResultMsgKeyAlloneE> bindExceptionHandler(BindException e) {
+    public ReqResultDti<?> bindExceptionHandler(BindException e) {
         ObjectError objectError = e.getAllErrors().get(0);
         logger.info(ResultMsgKeyAlloneE.DATA_BIND.getMsg(), objectError.getDefaultMessage());
         return reqResultFactory.createFailMsg(ResultMsgKeyAlloneE.DATA_BIND, objectError.getDefaultMessage());
@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ReqResultDti <?, ResultMsgKeyAlloneE> methodArgumentNotValidExceptionHandler(MethodArgumentNotValidException e) {
+    public ReqResultDti <?> methodArgumentNotValidExceptionHandler(MethodArgumentNotValidException e) {
         logger.error("数据验证异常：{}",e.getMessage());
         List<ObjectError> objectErrorList = e.getBindingResult().getAllErrors();
         StringBuilder errMsgSb = new StringBuilder();

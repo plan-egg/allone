@@ -12,7 +12,7 @@ public enum DistributedLockKeyAlloneE implements IDistributedLockKeyDti {
      * id生成批次起始值
      * 用于生成id时的起始值
      */
-    serial_get_batch(30L)
+    serial_get_batch_$(30L)
     ;
     /**
      * key分组

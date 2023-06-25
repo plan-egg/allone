@@ -71,12 +71,12 @@
       "description": "接口类pointcut表达式，用于用户信息保存到上下文"
     },
     {
-      "name": "allone.aop.pointcut.api-log",
+      "name": "allone.aop.pointcut.api",
       "type": "java.lang.String",
       "description": "api日志pointcut表达式（不配置不生效）"
     },
     {
-      "name": "allone.aop.pointcut.service-log",
+      "name": "allone.aop.pointcut.service",
       "type": "java.lang.String",
       "description": "service日志pointcut表达式（不配置不生效）"
     },

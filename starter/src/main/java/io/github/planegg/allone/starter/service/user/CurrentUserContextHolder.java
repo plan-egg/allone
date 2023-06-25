@@ -1,5 +1,6 @@
 package io.github.planegg.allone.starter.service.user;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
 import io.github.planegg.allone.starter.dto.CurrentUserCtx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +12,7 @@ public class CurrentUserContextHolder {
 
     private final static Logger logger = LoggerFactory.getLogger(CurrentUserContextHolder.class);
 
-    private final static ThreadLocal<CurrentUserCtx> userInfoContext = new InheritableThreadLocal();
+    private final static ThreadLocal<CurrentUserCtx> userInfoContext = new TransmittableThreadLocal<>();
 
 
 
@@ -27,6 +28,7 @@ public class CurrentUserContextHolder {
         CurrentUserCtx userCtx = userInfoContext.get();
         if (userCtx == null){
             logger.error("线程【{}】清除用户信息时已为空！");
+            return;
         }
         Long userId = userCtx.getUserId();
         logger.debug("线程【{}】开始清除用户信息【id：{}】",Thread.currentThread().getId(),userId);

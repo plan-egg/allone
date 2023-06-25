@@ -1,11 +1,34 @@
 package io.github.planegg.allone.starter.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import io.github.planegg.allone.starter.service.formatter.LocalDateFormatter;
+import io.github.planegg.allone.starter.service.formatter.LocalDateTimeFormatter;
 import org.hibernate.validator.BaseHibernateValidatorConfiguration;
 import org.springframework.boot.validation.MessageInterpolatorFactory;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.validation.Validator;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
+
+import java.math.BigInteger;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 
 /**
@@ -16,7 +39,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupp
 public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport {
     /**
      * 配置验证器
-     *
+     * <p>
      * Hibernate的校验模式
      * Hibernate Validator有普通模式(默认是这个模式) 和 快速模式两种验证模式。
      * 普通模式:  会校验完所有的属性，然后返回所有的验证失败信息。
@@ -46,51 +69,75 @@ public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport
     }
 
 
-   /* @Override
+    @Override
+    protected void addFormatters(FormatterRegistry registry) {
+        // 用于get 全局格式化日期转换
+        registry.addFormatterForFieldType(LocalDate.class, new LocalDateFormatter());
+        registry.addFormatterForFieldType(LocalDateTime.class, new LocalDateTimeFormatter());
+    }
+
+
+
+    //启动的时候进入ObjectMapper 构造断点，系统自动创建了
+    @Override
+    protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.add(0,localDateTimeHttpMessageConverter());
+        converters.add(longHttpMessageConverter());
+//        converters.add(dateHttpMessageConverter());
+
+    }
+
+    @Override
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/swagger-ui/**")
                 .addResourceLocations("classpath:/META-INF/resources/webjars/springfox-swagger-ui/");
     }
 
-    @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-*//*        converters.add(new ByteArrayHttpMessageConverter());
-        converters.add(new StringHttpMessageConverter(Charset.forName("UTF-8")));
-        converters.add(new ResourceHttpMessageConverter());
-        converters.add(new SourceHttpMessageConverter());
-        converters.add(new AllEncompassingFormHttpMessageConverter());*//*
-        //TODO 灯笼：处理Long转String
-//        converters.add(dateHttpMessageConverter());
-        converters.add(longHttpMessageConverter());
-    }
 
-    *//**
-     * 时间格式转换器,将Date类型统一转换为yyyy-MM-dd HH:mm:ss格式的字符串
-     * @return
-     *//*
-    @Bean
-    public MappingJackson2HttpMessageConverter dateHttpMessageConverter() {
+    /**
+     * 序列化LocalDateTime
+     */
+    private MappingJackson2HttpMessageConverter localDateTimeHttpMessageConverter() {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
-        converter.setObjectMapper(mapper);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(pattern));
+        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(pattern));
+
+        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+        // 反序列化时忽略多余字段
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 注册
+        objectMapper.registerModule(javaTimeModule);
+        objectMapper.setLocale(Locale.CHINA);
+        objectMapper.setTimeZone(TimeZone.getTimeZone("GMT+:08:00"));
+        converter.setObjectMapper(objectMapper);
         return converter;
     }
 
-    *//**
+
+    /**
      * 返回json时候将long类型转换为String类型的转换器
+     *
      * @return
-     *//*
-    @Bean
-    public MappingJackson2HttpMessageConverter longHttpMessageConverter() {
+     */
+    private MappingJackson2HttpMessageConverter longHttpMessageConverter() {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        ObjectMapper mapper = new ObjectMapper();
-        SimpleModule simpleModule = new SimpleModule();
-        simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
-        simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
-        mapper.registerModule(simpleModule);
-        converter.setObjectMapper(mapper);
+        ObjectMapper objectMapper = new ObjectMapper();
+        //序列换成json时,将所有的long变成string , 防止js Long类型溢出
+        SimpleModule longModule = new SimpleModule();
+        longModule.addSerializer(Long.class, ToStringSerializer.instance);
+        longModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        longModule.addSerializer(BigInteger.class, ToStringSerializer.instance);
+
+        // 反序列化时忽略多余字段
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        // 注册
+        objectMapper.registerModule(longModule);
+        converter.setObjectMapper(objectMapper);
         return converter;
-    }*/
+    }
 }

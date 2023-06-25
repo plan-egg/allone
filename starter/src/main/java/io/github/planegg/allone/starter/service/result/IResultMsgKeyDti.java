@@ -5,6 +5,10 @@ package io.github.planegg.allone.starter.service.result;
  */
 public interface IResultMsgKeyDti {
     /**
+     * 获取接口成功标识
+     */
+    String getRsFlag();
+    /**
      * 获取结果编码
      * @return
      */

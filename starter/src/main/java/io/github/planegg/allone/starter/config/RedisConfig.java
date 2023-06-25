@@ -4,6 +4,7 @@ import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.planegg.allone.starter.common.util.PrjStringUtil;
 import io.github.planegg.allone.starter.service.cache.RedisServiceImpl;
 import io.github.planegg.allone.starter.service.lock.IDistributedLockService;
 import io.github.planegg.allone.starter.service.lock.RedissonServiceImpl;
@@ -11,6 +12,7 @@ import io.github.planegg.allone.starter.service.cache.ICacheService;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.config.SingleServerConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -63,10 +65,14 @@ public class RedisConfig {
     public IDistributedLockService getRedissonClient() {
         Config config = new Config();
         //配置地址、数据库
-        config.useSingleServer()
+        SingleServerConfig serverConfig = config.useSingleServer();
+        serverConfig
                 .setAddress("redis://"+host+":"+port)
-//                .setPassword(password)
                 .setDatabase(Integer.valueOf(database));
+        if (!PrjStringUtil.isEmpty(password)){
+            serverConfig.setPassword(password);
+        }
+
         RedissonClient redissonClient = Redisson.create(config);
         IDistributedLockService distributedLockService = new RedissonServiceImpl(redissonClient);
         return distributedLockService;

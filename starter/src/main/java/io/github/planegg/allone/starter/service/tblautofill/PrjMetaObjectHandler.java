@@ -1,5 +1,6 @@
 package io.github.planegg.allone.starter.service.tblautofill;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
@@ -21,11 +22,12 @@ import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * mybatis plus 字段填充
  */
-@Component()
+@Component
 public class PrjMetaObjectHandler implements MetaObjectHandler {
 
     private final static Logger logger = LoggerFactory.getLogger(PrjMetaObjectHandler.class);
@@ -127,15 +129,82 @@ public class PrjMetaObjectHandler implements MetaObjectHandler {
     }
 
     /**
+     * 检查字段是否需要自动填充
+     * @param insertFlag
+     * @param fieldFill
+     * @return
+     */
+    protected boolean chkFill(boolean insertFlag , FieldFill fieldFill){
+        if (fieldFill == null ){
+            return false;
+        }
+
+        if (insertFlag && FieldFill.INSERT.compareTo(fieldFill) == 0){
+            return true;
+        }
+        if (FieldFill.INSERT_UPDATE.compareTo(fieldFill) == 0){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 非标准who字段自动填充
+     * @param metaObject
+     * @param insertFlag
+     */
+    protected void handleAutoFill(MetaObject metaObject,boolean insertFlag){
+        Field[] fields = metaObject.getOriginalObject().getClass().getDeclaredFields();
+        for (Field field : fields) {
+            TableField $tableField = field.getAnnotation(TableField.class);
+            if ($tableField == null ){
+                continue;
+            }
+            if (insertFlag && $tableField.fill().compareTo(FieldFill.INSERT) != 0 ){
+                continue;
+            }
+            if ($tableField.fill().compareTo(FieldFill.INSERT_UPDATE) != 0 ){
+                continue;
+            }
+            if (LocalDateTime.class.isAssignableFrom(field.getType())){
+                this.strictInsertFill(metaObject, $tableField.value() , () -> LocalDateTime.now(), LocalDateTime.class);
+            }else {
+                CurrentUserCtx currentUserCtx = getCurrentUserCtx();
+                this.strictInsertFill(metaObject, $tableField.value() , () -> currentUserCtx.getUserId(), Long.class);
+            }
+
+        }
+    }
+
+    /**
+     * 区分insert/update模式设置自动填充值
+     * @param insertFlag
+     * @param metaObject
+     * @param fieldName
+     * @param fieldVal
+     * @param fieldType
+     * @param <T>
+     * @param <E>
+     * @return
+     */
+    protected <T, E extends T> MetaObjectHandler setFieldFill(boolean insertFlag , MetaObject metaObject, String fieldName
+            , Supplier<E> fieldVal, Class<T> fieldType){
+        if (insertFlag){
+            return this.strictInsertFill(metaObject, fieldName, fieldVal, fieldType);
+        }
+        return this.strictUpdateFill(metaObject, fieldName , fieldVal, fieldType);
+    }
+
+    /**
      * 获取当前用户上下文
      * @return
      */
-    private CurrentUserCtx getCurrentUserCtx(){
+    protected CurrentUserCtx getCurrentUserCtx(){
         CurrentUserCtx currentUserCtx = CurrentUserContextHolder.get();
         if (currentUserCtx == null){
             currentUserCtx = new CurrentUserCtx();
         }
-        //TODO 灯笼：更改从数据库查出系统用户及租户
+        //TODO 灯笼：更改从数据库查出系统默认用户及租户
         if (currentUserCtx.getUserId() == null ){
             currentUserCtx.setUserId(1L);
         }
@@ -144,5 +213,7 @@ public class PrjMetaObjectHandler implements MetaObjectHandler {
         }
         return currentUserCtx;
     }
+
+
 
 }
