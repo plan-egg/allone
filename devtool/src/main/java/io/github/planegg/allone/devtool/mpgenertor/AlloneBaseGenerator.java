@@ -41,8 +41,16 @@ public class AlloneBaseGenerator {
 
         List<String> tableList = new LinkedList<>();
         File tblListFile = new File(prjPath+File.separator+fileName);
+
+
+
         if (!tblListFile.exists()){
             try {
+                //getParentFile() 获取上级目录（包含文件名时无法直接创建目录的）
+                if (!tblListFile.getParentFile().exists()) {
+                    //创建上级目录
+                    tblListFile.getParentFile().mkdirs();
+                }
                 tblListFile.createNewFile();
                 throw new RuntimeException("没有发现配置文件，系统已自动创建，请在配置文件中配置需要生成代码文件的表名，一行一个表。");
             } catch (IOException e) {
@@ -169,4 +177,5 @@ public class AlloneBaseGenerator {
         generator.packageInfo(pkgConfig.build());
         generator.execute();
     }
+
 }

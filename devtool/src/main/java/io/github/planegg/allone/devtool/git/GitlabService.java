@@ -190,7 +190,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @return
      * @throws GitLabApiException
      */
-    protected Map<String,Set<String>> searchCommits(GitLabApi gitLabApi, T prjInfo , String searchKey , String branch) throws GitLabApiException {
+    public Map<String,Set<String>> searchCommits(GitLabApi gitLabApi, T prjInfo , String searchKey , String branch) throws GitLabApiException {
         String prjId = String.valueOf(prjInfo.getPrjId());
         List<Commit> commitList = (List<Commit>) gitLabApi.getSearchApi()
                 .projectSearch(prjId, Constants.ProjectSearchScope.COMMITS, searchKey, branch);
@@ -198,13 +198,16 @@ public abstract class GitlabService <T extends IProjectInfoService> {
         return chgReqAndCommit4CompareMap;
     }
 
+
+
+
     /**
      * 获取待合并到主干的合并请求ID
      * @param prjInfo 项目集信息
      * @return
      * @throws GitLabApiException
      */
-    protected Long getMergeRequest(GitLabApi gitLabApi, T prjInfo) throws GitLabApiException {
+    public Long getMergeRequest(GitLabApi gitLabApi, T prjInfo) throws GitLabApiException {
         List<Long> mgReqIdList = new ArrayList<>();
         String prjId = String.valueOf(prjInfo.getPrjId());
         List<MergeRequest> mergeRequestList = gitLabApi.getMergeRequestApi().getMergeRequests(prjId, Constants.MergeRequestState.OPENED);
