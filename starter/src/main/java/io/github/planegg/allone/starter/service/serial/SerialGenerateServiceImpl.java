@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Service("serialGenerateService")
 @ConditionalOnMissingBean(name = "serialGenerateService")
-public class SerialGenerateServiceImpl extends BaseSerialGenerateServiceImpl implements ISerialGenerateService {
+public class SerialGenerateServiceImpl extends ABaseSerialGenerateService implements ISerialGenerateService {
 
     @Autowired
     private ICacheService cacheService;

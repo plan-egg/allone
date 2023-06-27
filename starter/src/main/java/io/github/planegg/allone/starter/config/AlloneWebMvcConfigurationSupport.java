@@ -2,7 +2,6 @@ package io.github.planegg.allone.starter.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -18,7 +17,6 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.validation.Validator;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
 import java.math.BigInteger;
@@ -78,13 +76,9 @@ public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport
 
 
 
-    //启动的时候进入ObjectMapper 构造断点，系统自动创建了
     @Override
     protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.add(0,localDateTimeHttpMessageConverter());
-        converters.add(longHttpMessageConverter());
-//        converters.add(dateHttpMessageConverter());
-
+        converters.add(0, mappingJackson2HttpMessageConverter());
     }
 
     @Override
@@ -97,7 +91,7 @@ public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport
     /**
      * 序列化LocalDateTime
      */
-    private MappingJackson2HttpMessageConverter localDateTimeHttpMessageConverter() {
+    private MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         ObjectMapper objectMapper = new ObjectMapper();
 
@@ -105,6 +99,12 @@ public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport
         DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(pattern));
         javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(pattern));
+
+        //处理long类型转换成字符串输出
+        javaTimeModule.addSerializer(Long.class, ToStringSerializer.instance);
+        javaTimeModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        javaTimeModule.addSerializer(BigInteger.class, ToStringSerializer.instance);
+
 
         objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
         // 反序列化时忽略多余字段
@@ -123,7 +123,7 @@ public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport
      *
      * @return
      */
-    private MappingJackson2HttpMessageConverter longHttpMessageConverter() {
+/*    private MappingJackson2HttpMessageConverter longHttpMessageConverter() {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         ObjectMapper objectMapper = new ObjectMapper();
         //序列换成json时,将所有的long变成string , 防止js Long类型溢出
@@ -139,5 +139,5 @@ public class AlloneWebMvcConfigurationSupport extends WebMvcConfigurationSupport
         objectMapper.registerModule(longModule);
         converter.setObjectMapper(objectMapper);
         return converter;
-    }
+    }*/
 }
