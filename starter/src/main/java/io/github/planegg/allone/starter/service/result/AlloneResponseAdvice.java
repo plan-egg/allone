@@ -13,7 +13,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 /**
  * 统一封装返回结果
  */
-@RestControllerAdvice("${allone.api.basePackages}")
+@RestControllerAdvice
 public class AlloneResponseAdvice implements ResponseBodyAdvice<Object> {
 
     @Autowired
