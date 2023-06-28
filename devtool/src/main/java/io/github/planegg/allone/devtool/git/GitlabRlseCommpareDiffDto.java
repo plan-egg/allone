@@ -9,6 +9,7 @@ public class GitlabRlseCommpareDiffDto {
 
     private Boolean missInSrc;
     private Boolean missInTgt;
+    private Boolean outOfList;
     private Set<String> lessInTarget;
     private Set<String> moreInTarget;
 
@@ -26,6 +27,14 @@ public class GitlabRlseCommpareDiffDto {
 
     public void setMissInTgt(Boolean missInTgt) {
         this.missInTgt = missInTgt;
+    }
+
+    public Boolean getOutOfList() {
+        return outOfList;
+    }
+
+    public void setOutOfList(Boolean outOfList) {
+        this.outOfList = outOfList;
     }
 
     public Set<String> getLessInTarget() {
