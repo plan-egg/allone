@@ -183,6 +183,10 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      */
     protected Map<String,Set<String>> getMergeCommits(GitLabApi gitLabApi,T prjInfo, Long mrId) throws GitLabApiException {
         String prjId = String.valueOf(prjInfo.getPrjId());
+        if (mrId == null){
+            System.err.println("Merge Request Id 不能为空！");
+            return null;
+        }
         List<Commit> commits = gitLabApi.getMergeRequestApi().getCommits(prjId, mrId);
         Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().filterCommit(prjInfo,commits);
         return chgReqAndCommit4CompareMap;
@@ -385,6 +389,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
         initFromConfigFile(configFile);
 
         for (String aReqChg : reqChg) {
+            System.out.println("开始检查的需求变更："+ aReqChg);
             System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
             for (T prjInfo : prjInfoList) {
                 System.out.println("开始检查的项目："+ prjInfo.getName());
@@ -405,12 +410,19 @@ public abstract class GitlabService <T extends IProjectInfoService> {
                 System.out.println();
                 System.out.println("开始检查合并请求上的提交：");
                 Long mergeRequestId = getMergeRequest(gitLabApi,prjInfo);
+                if (mergeRequestId == null){
+                    throw new RuntimeException("没有找到mergeRequestId！项目：" + prjInfo.getName());
+                }
                 Map<String,Set<String>> mgReqCommitMap = getGitlabService().getMergeCommits( gitLabApi, prjInfo, mergeRequestId);
                 Map<String,Set<String>> tgtMgReqCommitMap = new HashMap<>();
                 if (mgReqCommitMap == null || mgReqCommitMap.isEmpty()){
                     System.err.println("没有在合并请求上找到提交");
                 }else {
                     for (String uatCommitChgReq : uatCommitMap.keySet()) {
+                        if (mgReqCommitMap.get(uatCommitChgReq) == null){
+                            System.err.println("没有在合并请求上找到相应的提交！key="+uatCommitChgReq);
+                            continue;
+                        }
                         for (String mgCommitShortId : mgReqCommitMap.get(uatCommitChgReq)) {
                             System.out.println(mgCommitShortId);
                         }
