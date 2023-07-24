@@ -129,8 +129,6 @@ public abstract class GitlabService <T extends IProjectInfoService> {
             }
         }
 
-
-
         for (T prjInfo : prjInfoList) {
             System.out.println("开始从目标分支获取变更需求，当前项目："+prjInfo.getName());
             GitLabApi gitLabApi = getGitlabService().getGitlabApi(prjInfo.getName());
@@ -154,7 +152,6 @@ public abstract class GitlabService <T extends IProjectInfoService> {
         }
 
         Map<String, GitlabRlseCommpareDiffDto> compareDiffMap = getGitlabService().getCompareDiffMap(srcChgReqAndCommit4CompareMap, tgtChgReqAndCommit4CompareMap);
-
 
         for (String missChgReq : missChgReqList) {
             GitlabRlseCommpareDiffDto rlseCommpareDiffDto = new GitlabRlseCommpareDiffDto();
@@ -201,11 +198,27 @@ public abstract class GitlabService <T extends IProjectInfoService> {
      * @throws GitLabApiException
      */
     public Map<String,Set<String>> searchCommits(GitLabApi gitLabApi, T prjInfo , String searchKey , String branch) throws GitLabApiException {
+        Map<String,Set<String>> rs = new HashMap<>(3);
+
         String prjId = String.valueOf(prjInfo.getPrjId());
         List<Commit> commitList = (List<Commit>) gitLabApi.getSearchApi()
                 .projectSearch(prjId, Constants.ProjectSearchScope.COMMITS, searchKey, branch);
         Map<String,Set<String>> chgReqAndCommit4CompareMap = getGitlabService().filterCommit(prjInfo,commitList);
-        return chgReqAndCommit4CompareMap;
+
+        if (chgReqAndCommit4CompareMap.size() == 0){
+            return rs;
+        }
+        String commitKey = getCommitKey(searchKey, prjInfo);
+        if (chgReqAndCommit4CompareMap.size() > 1 ){
+            System.err.println(String.format("查找[%s]时，出现多个结果集！%s",commitKey, JSONObject.toJSONString(chgReqAndCommit4CompareMap)));
+        }
+        if (!chgReqAndCommit4CompareMap.containsKey(commitKey)){
+            System.err.println(String.format("查找[%s]时，结果集与commitKey不一致！%s",commitKey, JSONObject.toJSONString(chgReqAndCommit4CompareMap)));
+            return rs;
+        }
+        //保证返回的结果一定是searchKey相关的commit
+        rs.put(commitKey,chgReqAndCommit4CompareMap.get(commitKey));
+        return rs;
     }
 
 
@@ -332,6 +345,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
                 rlseCommpareDiffDto.setOutOfList(true);
                 outOfRlseSet.add(tgtChgReq.split("@")[0]);
             }
+            rlseCommpareDiffDto.setMoreInTarget(tgtChgReqAndCommitMap.get(tgtChgReq));
             compareDiffDtoMap.put(tgtChgReq,rlseCommpareDiffDto);
         }
         return compareDiffDtoMap;
@@ -401,6 +415,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
                     System.err.println("没有在uat分支上找到提交");
                 }else {
                     for (String uatCommitChgReq : uatCommitMap.keySet()) {
+                        System.out.println("uatCommitChgReq=" + uatCommitChgReq);
                         for (String commitShortId : uatCommitMap.get(uatCommitChgReq)) {
                             System.out.println(commitShortId);
                         }
@@ -411,7 +426,8 @@ public abstract class GitlabService <T extends IProjectInfoService> {
                 System.out.println("开始检查合并请求上的提交：");
                 Long mergeRequestId = getMergeRequest(gitLabApi,prjInfo);
                 if (mergeRequestId == null){
-                    throw new RuntimeException("没有找到mergeRequestId！项目：" + prjInfo.getName());
+                    System.err.println("没有找到mergeRequestId！项目：" + prjInfo.getName());
+                    continue;
                 }
                 Map<String,Set<String>> mgReqCommitMap = getGitlabService().getMergeCommits( gitLabApi, prjInfo, mergeRequestId);
                 Map<String,Set<String>> tgtMgReqCommitMap = new HashMap<>();
@@ -419,6 +435,7 @@ public abstract class GitlabService <T extends IProjectInfoService> {
                     System.err.println("没有在合并请求上找到提交");
                 }else {
                     for (String uatCommitChgReq : uatCommitMap.keySet()) {
+                        System.out.println("mrCommitChgReq=" + uatCommitChgReq);
                         if (mgReqCommitMap.get(uatCommitChgReq) == null){
                             System.err.println("没有在合并请求上找到相应的提交！key="+uatCommitChgReq);
                             continue;
@@ -482,4 +499,5 @@ public abstract class GitlabService <T extends IProjectInfoService> {
         this.excludeChgReqSet = new HashSet<>();
         excludeChgReqSet.addAll(Arrays.asList(chgReqs));
     }
+
 }
