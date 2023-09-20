@@ -1,0 +1,8 @@
+schemas: xx
+# locationRootPath:
+table:
+locationRelatePaths: all,${activeProfile},view,triggers,functions
+outOfOrder: true
+baselineVersion: 1.0.0
+cleanDisabled: true
+encoding: UTF-8

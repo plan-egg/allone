@@ -1,0 +1,3 @@
+url: jdbc:oracle:thin:@xxxxxxxx:1521:xxxxx
+user: xxxx
+password: xxxx
