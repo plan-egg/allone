@@ -12,6 +12,7 @@
     <modules>
         <module>starter</module>
         <module>devtool</module>
+        <module>flyway-app</module>
     </modules>
 
     <properties>
