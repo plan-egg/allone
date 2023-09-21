@@ -1,8 +1,9 @@
-package io.github.planegg;
+package io.github.planegg.flywayapp.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.github.planegg.flywayapp.util.FileUtil;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.configuration.ClassicConfiguration;
@@ -11,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
@@ -110,12 +113,10 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
         //读取flyway-config.yaml文件
         String configFileName = "flyway-config%s%s.yml";
 
-        String configFileDir = FlywayClientServiceImpl.class.getClassLoader().getResource("").getPath();
+//        String configFileDir = FlywayClientServiceImpl.class.getClassLoader().getResource("").getPath();
 
-        logger.info("正在读取的配置文件目录：{}",configFileDir);
-
-        File activeConfigFile = new File(configFileDir + File.separator + String.format(configFileName,"-",activeProfile));
-        File defaultConfigFile = new File(configFileDir + File.separator + String.format(configFileName,"",""));
+        File activeConfigFile = getConfigPath(String.format(configFileName,"-",activeProfile));
+        File defaultConfigFile = getConfigPath(String.format(configFileName,"",""));
 
 
         if (activeConfigFile.exists()){
@@ -149,7 +150,11 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
                     while (matcher.find()) {
                         String propName = originConfig.substring(matcher.start()+2,matcher.end()-1);
                         logger.info("开始读取运行参数：{}",propName);
-                        config = config.replaceAll( "\\$\\{"+propName+"}" , System.getProperty(propName));
+                        String propVal = System.getProperty(propName);
+                        if (propVal == null){
+                            continue;
+                        }
+                        config = config.replaceAll( "\\$\\{"+propName+"}" , propVal);
                     }
                     return config;
                 }
@@ -157,6 +162,74 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
             }
         }
         return null;
+    }
+
+    /**
+     * 获取配置文件
+     * 优先级从高到低，运行参数指定 >  jar支行同级配置文件 > 包内默认配置文件
+     * @param fileName
+     * @return
+     */
+    protected File getConfigPath(String fileName){
+        //从运行参数中获取指定目录
+        String configPath = System.getProperty("confPath");
+        File configFile = FileUtil.getFile(configPath,fileName);
+        if (configFile != null){
+            logger.info("已读取运行参数指定的配置文件目录：{}",configPath);
+            return configFile;
+        }
+/** * 获取当前可执行jar包所在目录 */
+        Class clz = getClass();
+        URL url = clz.getProtectionDomain().getCodeSource().getLocation();
+        File jarFile = null;
+        try {
+            // 转化为utf-8编码，支持中文
+            configPath = URLDecoder.decode(url.getPath(), "utf-8");
+            jarFile = new File(configPath);
+            if (jarFile.isDirectory()) {
+                configPath = jarFile.getCanonicalPath();
+            }else {
+                configPath = jarFile.getParentFile().getCanonicalPath();
+            }
+        } catch (Exception e) {
+            logger.error("获取当前可执行jar包所在目录时出错！",e);
+        }
+
+        configFile = FileUtil.getFile(configPath,fileName);
+        if (configFile != null){
+            logger.info("已读取执行jar所在目录配置，文件目录：{}",configPath);
+            return configFile;
+        }
+
+        //读取自身默认配置文件
+        URL clzUrl = clz.getResource("/" + fileName);
+        try {
+            configPath = URLDecoder.decode(clzUrl.getPath(), "utf-8");
+            configFile = FileUtil.getFile(configPath,fileName);
+            if (configFile != null){
+                logger.info("已读取执行jar包内默认配置，文件目录：{}",configPath);
+                return configFile;
+            }
+        } catch (Exception e) {
+            logger.error("获取当前可执行jar包内默认配置时出错！",e);
+        }
+        throw new RuntimeException("没有找到配置文件！" + fileName);
+    }
+
+
+    protected void info(Flyway flyway){
+        MigrationInfo[] pending = flyway.info().all();
+        for (MigrationInfo migrationInfo : pending) {
+            logger.info(JSONObject.toJSONString(migrationInfo));
+        }
+    }
+    protected void repair(Flyway flyway){
+        flyway.repair();
+        logger.info("repair命令执行成功！");
+    }
+    protected void migrate(Flyway flyway){
+        int count = flyway.migrate();
+        logger.info("更新条数："+count);
     }
 
 }

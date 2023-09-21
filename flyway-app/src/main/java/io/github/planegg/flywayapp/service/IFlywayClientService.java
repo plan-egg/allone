@@ -1,4 +1,4 @@
-package io.github.planegg;
+package io.github.planegg.flywayapp.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.flywaydb.core.Flyway;
