@@ -1,6 +1,8 @@
-schemas: xx
+schemas: xxx
 # locationRootPath:
 table:
+# 脚本根目录 Flyway所期望的"filesystem:"或"classpath:"之一
+locationRootPath: "filesystem:D:/xxxxxx/sql/migrate"
 locationRelatePaths: all,${activeProfile},view,triggers,functions
 outOfOrder: true
 baselineVersion: 1.0.0

@@ -1,3 +1,8 @@
-url: jdbc:oracle:thin:@xxxxxxxx:1521:xxxxx
+url: jdbc:oracle:thin:@xxxx:1521:xxxx
 user: xxxx
 password: xxxx
+# 注意：oracle需要大写
+schemas: xxx
+# 执行命令仅支持（多个命令以逗号分隔）：info,repair,migrate
+cmdList: dfsf
+

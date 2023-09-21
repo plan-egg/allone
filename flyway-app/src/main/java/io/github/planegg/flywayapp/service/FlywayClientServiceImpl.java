@@ -15,8 +15,11 @@ import java.io.File;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
+import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +28,14 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
     private Logger logger = LoggerFactory.getLogger(FlywayClientServiceImpl.class);
 
     private String activeProfile = System.getProperty("activeProfile","uat");
+
+    protected Flyway flyway;
+
+    protected List<JSONObject> configList;
+
+
+    protected Map<String, Runnable> actionMap = new HashMap<>(5);
+
     /**
      * 匹配配置中${xxx.xxx}的变量
      * 用于从运行时通过参数传入
@@ -32,19 +43,32 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
     private final static Pattern REPLACE_HOLDER_PATTERN = Pattern.compile("\\$\\{([a-zA-Z]\\.?)+}");
 
     @Override
-    public Flyway getFlywayClient(){
-        Configuration configure = getConfig(getConfigList());
-        Flyway flyway = new Flyway(configure);
-        return flyway;
+    public void initFlywayClient(){
+
+        actionMap.put("info",this::info);
+        actionMap.put("migrate",this::migrate);
+        actionMap.put("repair",this::repair);
+
+        configList = getConfigList();
+        Configuration configure = getConfig(configList);
+        flyway = new Flyway(configure);
     }
 
     @Override
-    public void execute(Flyway flyway){
-        MigrationInfo[] pending = flyway.info().all();
-        for (MigrationInfo migrationInfo : pending) {
-            logger.info(JSONObject.toJSONString(migrationInfo));
+    public void execute(){
+        String cmdList = (String)getProperty(configList,"cmdList");
+        if (cmdList == null){
+            logger.info("没有命令需要执行！");
+            return;
         }
-
+        chkForAction();
+        for (String cmd : cmdList.split(",")) {
+            Runnable action = actionMap.get(cmd);
+            if (action == null){
+                throw new RuntimeException("命令不正确，请检查！目前仅支持：info,repair,migrate");
+            }
+            action.run();
+        }
     }
 
     @Override
@@ -217,19 +241,53 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
     }
 
 
-    protected void info(Flyway flyway){
-        MigrationInfo[] pending = flyway.info().all();
+    protected void info(){
+        logger.info("开始执行 info 命令！");
+        String tblFormat = "          |%-20s|%-50s|%-10s|%-25s|%-20s|%-20s|%-80s|";
+        MigrationInfo[] pending = flyway.info().pending();
+        logger.info("---------------------------------------------------------------------------------------------------" +
+                "-------------------------------------------------------------------------------------------------------");
+        String header = String.format(tblFormat, "Version"
+                , "Description", "Type","Installed On ","State","Checksum","Script");
+        logger.info(header);
+        logger.info("---------------------------------------------------------------------------------------------------" +
+                "-------------------------------------------------------------------------------------------------------");
         for (MigrationInfo migrationInfo : pending) {
-            logger.info(JSONObject.toJSONString(migrationInfo));
+            String str = String.format(tblFormat, migrationInfo.getVersion()==null?"":migrationInfo.getVersion().getVersion()
+                    , migrationInfo.getDescription(), migrationInfo.getType(), migrationInfo.getInstalledOn()
+            ,migrationInfo.getState(),migrationInfo.getChecksum(),migrationInfo.getScript());
+            logger.info(str);
         }
     }
-    protected void repair(Flyway flyway){
+    protected void repair(){
+        logger.info("开始执行repair命令！");
         flyway.repair();
-        logger.info("repair命令执行成功！");
+        logger.info("结束执行repair命令！");
     }
-    protected void migrate(Flyway flyway){
+    protected void migrate(){
+        logger.info("开始执行migrate命令！");
         int count = flyway.migrate();
-        logger.info("更新条数："+count);
+        logger.info("结束执行migrate命令！更新条数："+count);
     }
 
+    /**
+     * 判断是否获取到正确的执行历史
+     * 通过判断是否获取到当前执行记录判断
+     */
+    protected void chkForAction(){
+        MigrationInfo current = flyway.info().current();
+        if (current == null){
+            String schemaInDb = "";
+            try {
+                schemaInDb = flyway.getDataSource().getConnection().getSchema();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            throw new RuntimeException(String.format("没有获取到正确的执行历史，请检查!" +
+                    "\n 1.是否为flyway未初始化?" +
+                    "\n 2.执行历史记录表是否正确创建？要求的执行记录表：%s" +
+                    "\n 3.schema配置是否正确？是否区分大小写？当前配置：%s，数据库配置：%s",flyway.getTable()
+                    ,JSONObject.toJSONString(flyway.getSchemas()),schemaInDb));
+        }
+    }
 }

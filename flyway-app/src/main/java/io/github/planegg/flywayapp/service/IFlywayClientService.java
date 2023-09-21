@@ -1,7 +1,6 @@
 package io.github.planegg.flywayapp.service;
 
 import com.alibaba.fastjson.JSONObject;
-import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.Configuration;
 
 import java.io.File;
@@ -12,16 +11,15 @@ import java.util.List;
  */
 public interface IFlywayClientService {
     /**
-     * 获取客户端
+     * 初始化客户端
      * @return
      */
-    Flyway getFlywayClient();
+    void initFlywayClient();
 
     /**
      * 执行flyway命令
-     * @param flyway
      */
-    void execute(Flyway flyway);
+    void execute();
 
     /**
      * 获取配置
