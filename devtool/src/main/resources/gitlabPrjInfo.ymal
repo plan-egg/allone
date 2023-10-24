@@ -12,6 +12,8 @@ gitlabInfoList:
         #uatBranch:
         # mainBranch 默认 master
         #mainBranch:
+        # 支持手动指定合并请求
+        # mergeReqId: 1762
       - name: testSys_2
         prjId: 2
   - gitlabUrl: "http://www.example.com"
@@ -23,3 +25,4 @@ gitlabInfoList:
         prjId: 1
       - name: testSys_2
         prjId: 2
+

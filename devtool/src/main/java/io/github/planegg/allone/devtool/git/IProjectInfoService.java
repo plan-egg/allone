@@ -25,4 +25,10 @@ public interface IProjectInfoService {
      * @return
      */
     String getMainBranch();
+
+    /**
+     * 获取合并请求ID
+     * @return
+     */
+    Long getMergeReqId();
 }

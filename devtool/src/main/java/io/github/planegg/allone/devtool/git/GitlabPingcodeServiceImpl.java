@@ -5,11 +5,16 @@ import com.alibaba.fastjson2.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GitlabPingcodeServiceImpl extends GitlabService {
 
     private String rspBody;
-
+    /**
+     * pingcode 编号格式
+     */
+    protected Pattern pingcodeNumPtn = Pattern.compile("\\w+\\-\\d+");
 
     @Override
     protected GitlabService getGitlabService() {
@@ -23,7 +28,13 @@ public class GitlabPingcodeServiceImpl extends GitlabService {
             return title;
         }
         String chgNum = title.substring(0,title.indexOf(" "));
-        chgNum = chgNum.replace("#","");
+        Matcher pingcodeMatcher = pingcodeNumPtn.matcher(chgNum);
+        // "#xxxx-1234    这是这一个测试例子，包含了特殊的空格-ASCII码值160"
+        if (!pingcodeMatcher.find()) {
+            System.err.println("提交的pingcode编号不正确："+title);
+            return chgNum;
+        }
+        chgNum = pingcodeMatcher.group();
         return chgNum;
     }
 
@@ -51,4 +62,6 @@ public class GitlabPingcodeServiceImpl extends GitlabService {
     public void setRspBody(String rspBody) {
         this.rspBody = rspBody;
     }
+
+
 }

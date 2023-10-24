@@ -9,6 +9,10 @@ public class GitlabPrjInfoDto implements IProjectInfoService{
     private Long prjId;
     private String uatBranch = "uat";
     private String mainBranch = "master";
+    /**
+     * 合并请求id
+     */
+    private Long mergeReqId;
 
     public void setName(String name) {
         this.name = name;
@@ -24,6 +28,10 @@ public class GitlabPrjInfoDto implements IProjectInfoService{
 
     public void setMainBranch(String mainBranch) {
         this.mainBranch = mainBranch;
+    }
+
+    public void setMergeReqId(Long mergeReqId) {
+        this.mergeReqId = mergeReqId;
     }
 
     @Override
@@ -44,5 +52,10 @@ public class GitlabPrjInfoDto implements IProjectInfoService{
     @Override
     public String getMainBranch() {
         return mainBranch;
+    }
+
+    @Override
+    public Long getMergeReqId() {
+        return mergeReqId;
     }
 }
