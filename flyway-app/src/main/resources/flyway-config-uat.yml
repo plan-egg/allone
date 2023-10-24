@@ -3,6 +3,6 @@ user: xxxx
 password: xxxx
 # 注意：oracle需要大写
 schemas: xxx
-# 执行命令仅支持（多个命令以逗号分隔）：info,repair,migrate
+# 执行命令仅支持（多个命令以逗号分隔）：info_all,info_pending,repair,migrate
 cmdList: dfsf
 

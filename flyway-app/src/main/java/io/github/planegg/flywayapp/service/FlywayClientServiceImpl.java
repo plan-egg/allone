@@ -45,7 +45,8 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
     @Override
     public void initFlywayClient(){
 
-        actionMap.put("info",this::info);
+        actionMap.put("info_all",this::infoAll);
+        actionMap.put("info_pending",this::infoPending);
         actionMap.put("migrate",this::migrate);
         actionMap.put("repair",this::repair);
 
@@ -65,7 +66,7 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
         for (String cmd : cmdList.split(",")) {
             Runnable action = actionMap.get(cmd);
             if (action == null){
-                throw new RuntimeException("命令不正确，请检查！目前仅支持：info,repair,migrate");
+                throw new RuntimeException("命令不正确，请检查！目前仅支持："+ JSONObject.toJSONString(actionMap.keySet()));
             }
             action.run();
         }
@@ -180,6 +181,12 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
                         }
                         config = config.replaceAll( "\\$\\{"+propName+"}" , propVal);
                     }
+                    //如果发现有变量没有替换，则返回null
+                    Matcher matcherNew = REPLACE_HOLDER_PATTERN.matcher(config);
+                    if (matcherNew.find()){
+                        logger.warn("有变量未能找到配置，name：{}，替换后的值是：{}",name,config);
+                        return null;
+                    }
                     return config;
                 }
                 return val;
@@ -241,23 +248,25 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
     }
 
 
-    protected void info(){
-        logger.info("开始执行 info 命令！");
-        String tblFormat = "          |%-20s|%-50s|%-10s|%-25s|%-20s|%-20s|%-80s|";
-        MigrationInfo[] pending = flyway.info().pending();
-        logger.info("---------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------------");
-        String header = String.format(tblFormat, "Version"
+    protected void info(MigrationInfo[] migrationInfoArr){
+
+        String tblFormat = "          %-5s|%-20s|%-50s|%-10s|%-25s|%-20s|%-20s|%-80s|";
+        String lineStr = "---------------------------------------------------------------------------------------------------" +
+                "-------------------------------------------------------------------------------------------------------------" +
+                "------------------------------------";
+        logger.info(lineStr);
+        String header = String.format(tblFormat, "Seq","Version"
                 , "Description", "Type","Installed On ","State","Checksum","Script");
         logger.info(header);
-        logger.info("---------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------------");
-        for (MigrationInfo migrationInfo : pending) {
-            String str = String.format(tblFormat, migrationInfo.getVersion()==null?"":migrationInfo.getVersion().getVersion()
+        logger.info(lineStr);
+        int seq = 1;
+        for (MigrationInfo migrationInfo : migrationInfoArr) {
+            String str = String.format(tblFormat,seq++, migrationInfo.getVersion()==null?"":migrationInfo.getVersion().getVersion()
                     , migrationInfo.getDescription(), migrationInfo.getType(), migrationInfo.getInstalledOn()
             ,migrationInfo.getState(),migrationInfo.getChecksum(),migrationInfo.getScript());
             logger.info(str);
         }
+        logger.info(lineStr);
     }
     protected void repair(){
         logger.info("开始执行repair命令！");
@@ -269,6 +278,18 @@ public class FlywayClientServiceImpl implements IFlywayClientService {
         int count = flyway.migrate();
         logger.info("结束执行migrate命令！更新条数："+count);
     }
+
+    protected void infoAll(){
+        logger.info("开始执行 info_all 命令！");
+        MigrationInfo[] migrationInfoArr = flyway.info().all();
+        info(migrationInfoArr);
+    }
+    protected void infoPending(){
+        logger.info("开始执行 info_pending 命令！");
+        MigrationInfo[] migrationInfoArr = flyway.info().pending();
+        info(migrationInfoArr);
+    }
+
 
     /**
      * 判断是否获取到正确的执行历史
